@@ -53,7 +53,17 @@ void TraceCallGetNewSamplesCallback(ProxyEventTracingData& proxy_event_tracing_d
                                     const ProxyEventBindingBase& proxy_event_binding_base,
                                     ITracingRuntime::TracePointDataId trace_point_data_id);
 void TraceCallReceiveHandler(ProxyEventTracingData& proxy_event_tracing_data,
-                             const ProxyEventBindingBase& proxy_event_binding_base);
+                             const ProxyEventBindingBase& proxy_event_binding_base) noexcept;
+void TraceSubscriptionStateChanged(ProxyEventTracingData& proxy_event_tracing_data,
+                                   const ProxyEventBindingBase& proxy_event_binding_base,
+                                   SubscriptionState new_state) noexcept;
+void TraceSetSubscriptionStateChangeHandler(ProxyEventTracingData& proxy_event_tracing_data,
+                                            const ProxyEventBindingBase& proxy_event_binding_base) noexcept;
+void TraceUnsetSubscriptionStateChangeHandler(ProxyEventTracingData& proxy_event_tracing_data,
+                                              const ProxyEventBindingBase& proxy_event_binding_base) noexcept;
+void TraceCallSubscriptionStateChangeHandler(ProxyEventTracingData& proxy_event_tracing_data,
+                                             const ProxyEventBindingBase& proxy_event_binding_base,
+                                             SubscriptionState new_state) noexcept;
 
 score::cpp::callback<void(void), 128U> CreateTracingReceiveHandler(
     ProxyEventTracingData& proxy_event_tracing_data,
