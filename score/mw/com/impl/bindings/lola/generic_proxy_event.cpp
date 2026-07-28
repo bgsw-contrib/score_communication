@@ -113,6 +113,17 @@ Result<void> GenericProxyEvent::UnsetSubscriptionStateChangeHandler() noexcept
     return proxy_event_common_.UnsetSubscriptionStateChangeHandler();
 }
 
+void GenericProxyEvent::SetSubscriptionStateChangeTracingCallback(
+    score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept
+{
+    return proxy_event_common_.SetSubscriptionStateChangeTracingCallback(std::move(callback));
+}
+
+pid_t GenericProxyEvent::GetEventSourcePid() const noexcept
+{
+    return proxy_event_common_.GetEventSourcePid();
+}
+
 ElementFqId GenericProxyEvent::GetElementFQId() const noexcept
 {
     return proxy_event_common_.GetElementFQId();
