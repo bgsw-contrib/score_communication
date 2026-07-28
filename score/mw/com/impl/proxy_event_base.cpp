@@ -96,6 +96,8 @@ Result<void> ProxyEventBase::Subscribe(const std::size_t max_sample_count) noexc
         {
             return MakeUnexpected(ComErrc::kBindingFailure);
         }
+        tracing::SetupSubscriptionStateChangeTracing(tracing_data_, *binding_base_);
+        tracing::SetupSubscriptionStateChangeHandlerTracing(tracing_data_, *binding_base_);
     }
     else if ((current_state == SubscriptionState::kSubscribed) ||
              (current_state == SubscriptionState::kSubscriptionPending))
@@ -156,6 +158,7 @@ Result<void> ProxyEventBase::SetSubscriptionStateChangeHandler(SubscriptionState
     if (binding_base_ != nullptr)
     {
         tracing::TraceSetSubscriptionStateChangeHandler(tracing_data_, *binding_base_);
+        return binding_base_->SetSubscriptionStateChangeHandler(std::move(handler));
     }
     return binding_base_->SetSubscriptionStateChangeHandler(std::move(handler));
 }
