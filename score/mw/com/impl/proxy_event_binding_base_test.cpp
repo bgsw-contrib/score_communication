@@ -48,7 +48,20 @@ class DummyProxyEventBinding final : public ProxyEventBindingBase
     {
         return {};
     }
-    Result<std::size_t> GetNumNewSamplesAvailable() const override
+
+    void SetSubscriptionStateChangeTracingCallback(
+        score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept override
+    {
+        (void)callback;
+    }
+
+    void SetSubscriptionStateChangeHandlerTracingCallback(
+        score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept override
+    {
+        (void)callback;
+    }
+
+    Result<std::size_t> GetNumNewSamplesAvailable() const noexcept override
     {
         return {};
     }
