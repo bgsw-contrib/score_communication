@@ -155,7 +155,7 @@ void ProxyEventBase::Unsubscribe() noexcept
 
 Result<void> ProxyEventBase::SetSubscriptionStateChangeHandler(SubscriptionStateChangeHandler handler) noexcept
 {
-    if (binding_base_ != nullptr)
+    if (proxy_event_base_mock_ != nullptr)
     {
         tracing::TraceSetSubscriptionStateChangeHandler(tracing_data_, *binding_base_);
         return binding_base_->SetSubscriptionStateChangeHandler(std::move(handler));
@@ -165,7 +165,7 @@ Result<void> ProxyEventBase::SetSubscriptionStateChangeHandler(SubscriptionState
 
 Result<void> ProxyEventBase::UnsetSubscriptionStateChangeHandler() noexcept
 {
-    if (binding_base_ != nullptr)
+    if (proxy_event_base_mock_ != nullptr)
     {
         tracing::TraceUnsetSubscriptionStateChangeHandler(tracing_data_, *binding_base_);
     }
