@@ -20,6 +20,8 @@
 
 #include "score/result/result.h"
 
+#include <score/callback.hpp>
+
 #include <cstddef>
 #include <memory>
 
