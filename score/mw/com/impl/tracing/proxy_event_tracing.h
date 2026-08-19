@@ -55,10 +55,16 @@ void TraceCallGetNewSamplesCallback(ProxyEventTracingData& proxy_event_tracing_d
 void TraceCallReceiveHandler(ProxyEventTracingData& proxy_event_tracing_data,
                              const ProxyEventBindingBase& proxy_event_binding_base);
 
-void SetupSubscriptionStateChangeTracing(ProxyEventTracingData& proxy_event_tracing_data,
-                                         ProxyEventBindingBase& proxy_event_binding_base) noexcept;
-void SetupSubscriptionStateChangeHandlerTracing(ProxyEventTracingData& proxy_event_tracing_data,
-                                                ProxyEventBindingBase& proxy_event_binding_base) noexcept;
+void TraceSubscriptionStateChanged(ProxyEventTracingData& proxy_event_tracing_data,
+                                   const ProxyEventBindingBase& proxy_event_binding_base,
+                                   SubscriptionState new_state) noexcept;
+void TraceSetSubscriptionStateChangeHandler(ProxyEventTracingData& proxy_event_tracing_data,
+                                            const ProxyEventBindingBase& proxy_event_binding_base) noexcept;
+void TraceUnsetSubscriptionStateChangeHandler(ProxyEventTracingData& proxy_event_tracing_data,
+                                              const ProxyEventBindingBase& proxy_event_binding_base) noexcept;
+void TraceCallSubscriptionStateChangeHandler(ProxyEventTracingData& proxy_event_tracing_data,
+                                             const ProxyEventBindingBase& proxy_event_binding_base,
+                                             SubscriptionState new_state) noexcept;
 
 void SetupSubscriptionStateChangeTracing(ProxyEventTracingData& proxy_event_tracing_data,
                                          ProxyEventBindingBase& proxy_event_binding_base) noexcept;
