@@ -61,7 +61,7 @@ class DummyProxyEventBinding final : public ProxyEventBindingBase
         (void)callback;
     }
 
-    Result<std::size_t> GetNumNewSamplesAvailable() const noexcept override
+    Result<std::size_t> GetNumNewSamplesAvailable() const override
     {
         return {};
     }
