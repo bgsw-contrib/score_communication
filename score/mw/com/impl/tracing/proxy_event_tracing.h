@@ -70,10 +70,6 @@ void SetupSubscriptionStateChangeTracing(ProxyEventTracingData& proxy_event_trac
 void SetupSubscriptionStateChangeHandlerTracing(ProxyEventTracingData& proxy_event_tracing_data,
                                                 ProxyEventBindingBase& proxy_event_binding_base) noexcept;
 
-void TraceSubscriptionStateChanged(ProxyEventTracingData& proxy_event_tracing_data,
-                                   const ProxyEventBindingBase& proxy_event_binding_base,
-                                   SubscriptionState new_state) noexcept;
-
 score::cpp::callback<void(void), 128U> CreateTracingReceiveHandler(
     ProxyEventTracingData& proxy_event_tracing_data,
     const ProxyEventBindingBase& proxy_event_binding_base,
