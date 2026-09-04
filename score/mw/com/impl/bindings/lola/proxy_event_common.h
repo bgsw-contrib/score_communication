@@ -88,6 +88,8 @@ class ProxyEventCommon final
     Result<void> UnsetSubscriptionStateChangeHandler() noexcept;
     void SetSubscriptionStateChangeTracingCallback(
         score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept;
+    void SetSubscriptionStateChangeHandlerTracingCallback(
+        score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept;
 
     ElementFqId GetElementFQId() const noexcept
     {
