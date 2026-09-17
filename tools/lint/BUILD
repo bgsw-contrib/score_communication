@@ -11,8 +11,17 @@
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
 
+load("@rules_python//python:defs.bzl", "py_binary")
+
 # Makes tools/lint/ a Bazel package so linters.bzl can be referenced as a
 # label target (e.g. //tools/lint:linters.bzl%clang_tidy) in bazelrc.
 exports_files([
     "linters.bzl",
 ])
+
+py_binary(
+    name = "eof_newline_fmt",
+    srcs = ["eof_newline_fmt.py"],
+    main = "eof_newline_fmt.py",
+    visibility = ["//visibility:public"],
+)
