@@ -145,6 +145,7 @@ write_file(
 
 sh_test(
     name = "eof_newline_test",
+    local = True,
     srcs = [":eof_newline_check_script"],
     tags = ["no-sandbox"],
 )
