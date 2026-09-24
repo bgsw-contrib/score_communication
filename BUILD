@@ -82,7 +82,7 @@ format_multirun(
 )
 
 format_test(
-    name = "format_tools_test",
+    name = "format_test",
     cc = "@clang_format//:executable",
     no_sandbox = True,
     python = "@aspect_rules_lint//lint:ruff_bin",
@@ -145,15 +145,15 @@ write_file(
 
 sh_test(
     name = "eof_newline_test",
-    local = True,
     srcs = [":eof_newline_check_script"],
+    local = True,
     tags = ["no-sandbox"],
 )
 
 test_suite(
-    name = "format_test",
+    name = "format_all_test",
     tests = [
         ":eof_newline_test",
-        ":format_tools_test",
+        ":format_test",
     ],
 )
