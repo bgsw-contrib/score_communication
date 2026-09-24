@@ -12,6 +12,7 @@
 # *******************************************************************************
 
 load("@aspect_rules_lint//format:defs.bzl", "format_multirun", "format_test")
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
@@ -117,4 +118,42 @@ sh_binary(
     name = "ruff.check",
     srcs = [":ruff.check_script"],
     target_compatible_with = ["@platforms//os:linux"],
+)
+
+write_file(
+    name = "eof_newline_check_script",
+    out = "eof_newline_check.sh",
+    content = [
+        "#!/usr/bin/env bash",
+        "set -euo pipefail",
+        "cd \"${BUILD_WORKSPACE_DIRECTORY:-$PWD}\"",
+        "violations=()",
+        "while IFS= read -r -d '' file; do",
+        "    size=$(wc -c < \"${file}\")",
+        "    [[ \"${size}\" -eq 0 ]] && continue",
+        "    bytes=$(tail -c 2 \"${file}\" | od -An -t x1 | tr -d ' \\n')",
+        "    if [[ \"${bytes}\" == *0a0a ]] || [[ \"${bytes}\" != *0a ]]; then violations+=(\"${file}\"); fi",
+        "done < <(git grep --cached --no-index -Ilz '' -- . 2>/dev/null || git grep -Ilz '' -- .)",
+        "if [[ \"${#violations[@]}\" -gt 0 ]]; then",
+        "    printf '%s\\n' 'The following files must end with exactly one newline:' >&2",
+        "    printf '  %s\\n' \"${violations[@]}\" >&2",
+        "    exit 1",
+        "fi",
+    ],
+    is_executable = True,
+)
+
+sh_test(
+    name = "eof_newline_test",
+    srcs = [":eof_newline_check_script"],
+    local = True,
+    tags = ["no-sandbox"],
+)
+
+test_suite(
+    name = "format_all_test",
+    tests = [
+        ":eof_newline_test",
+        ":format_test",
+    ],
 )
