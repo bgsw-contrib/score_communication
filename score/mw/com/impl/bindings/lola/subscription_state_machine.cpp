@@ -122,6 +122,20 @@ void SubscriptionStateMachine::UnsetSubscriptionStateChangeHandler() noexcept
     subscription_state_change_handler_.reset();
 }
 
+void SubscriptionStateMachine::SetSubscriptionStateChangeTracingCallback(
+    score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept
+{
+    std::lock_guard<std::mutex> lock{state_mutex_};
+    subscription_state_change_tracing_callback_ = std::move(callback);
+}
+
+void SubscriptionStateMachine::SetSubscriptionStateChangeHandlerTracingCallback(
+    score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept
+{
+    std::lock_guard<std::mutex> lock{state_mutex_};
+    subscription_state_change_handler_tracing_callback_ = std::move(callback);
+}
+
 std::optional<std::uint16_t> SubscriptionStateMachine::GetMaxSampleCount() const noexcept
 {
     std::lock_guard<std::mutex> lock{state_mutex_};
