@@ -16,7 +16,7 @@ abstract class SkeletonEventBinding<SampleType> {
   +GetMaxSize(): size_t
 }
 
-abstract class ProxyEventBindingBase {
+abstract class  {
   {abstract} +Subscribe(size_t maxSampleCount): void
   {abstract} +Unsubscribe(): void
   {abstract} +GetSubscriptionState(): SubscriptionState

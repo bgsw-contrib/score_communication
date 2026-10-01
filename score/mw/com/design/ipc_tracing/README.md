@@ -195,6 +195,47 @@ An additional feature of the "facade" `impl::tracing::TracingRuntime` is, that i
 multiple calls to the `GenericTraceAPI`. E.g. it monitors errors, when calling to `GenericTraceAPI` and decides, when
 to turn off tracing completely because of unrecoverable errors or a threshold of consecutive errors being reached.
 
+### Subscription State Change Tracing
+
+In addition to the API call tracing documented above, `IPC Tracing` also supports tracing subscription state transitions for proxy events and fields. This allows applications to diagnose and monitor the subscription lifecycle of events/fields, including:
+
+- `TraceSubscriptionStateChanged`: Traces when a subscription state transitions (e.g., from `kNotSubscribed` to `kSubscribed`, or `kSubscribed` to `kSubscriptionPending`)
+- `TraceSetSubscriptionStateChangeHandler`: Traces when a user registers a subscription state change handler
+- `TraceUnsetSubscriptionStateChangeHandler`: Traces when a user unregisters a subscription state change handler
+- `TraceCallSubscriptionStateChangeHandler`: Traces when the user's subscription state change handler is invoked (optional, not currently used in production)
+
+#### Configuration
+
+Subscription state change tracing is controlled via the trace filter configuration with the following trace point settings:
+
+```json
+{
+  "trace_subscription_state_changed": true,
+  "trace_subscription_state_change_handler_registered": true,
+  "trace_subscription_state_change_handler_deregistered": true,
+  "trace_subscription_state_change_handler_callback": true
+}
+```
+
+Each trace point can be independently enabled or disabled based on diagnostic needs.
+
+#### Implementation Pattern
+
+Unlike API call tracing, subscription state change tracing uses a different pattern because state transitions happen asynchronously within the state machine and must be captured efficiently. Instead of wrapping user callbacks (which would exceed callback capacity constraints), we use a separate 64-byte tracing callback installed at the `SubscriptionStateMachine` level:
+
+1. When `ProxyEvent::Subscribe()` is called successfully, it calls `SetupSubscriptionStateChangeTracing()` to install the tracing callback
+2. The tracing callback is invoked by `SubscriptionStateMachine::TransitionToState()` at every state change
+3. The callback dispatches to `TraceSubscriptionStateChanged()`, which checks the enable flag and sends the trace to `TracingRuntime`
+4. Other state change handlers (registration/unregistration) are traced directly at the point where they are called (in `ProxyEventBase`)
+
+The interaction flow is illustrated in the following sequence diagram:
+
+<img alt="SEQUENCE_SUBSCRIPTION_STATE_TRACING" src="https://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/eclipse-score/communication/refs/heads/main/score/mw/com/design/ipc_tracing/sequence_subscription_state_tracing.puml">
+
+#### Callback Capacity Considerations
+
+The subscription state change tracing callback uses a `score::cpp::callback<void(SubscriptionState), 64U>` with 64-byte capacity, providing ample space for capturing references to the tracing data and binding context. This larger capacity allows the callback to capture multiple references without size constraints, which was necessary to avoid the 32-byte capacity limit of user handler callbacks.
+
 ### Handling Trace calls
 
 At some point within a `LoLa`/`mw::com` public API call a call to `analysis::tracing::GenericTraceAPI::Trace()`
@@ -327,7 +368,7 @@ elements with tracing enabled and potential `TraceDoneCallback` need to take pla
 `impl::tracing::TracingRuntime` via call to`RegisterServiceElement(TracingSlotSizeType number_of_ipc_tracing_slots)`,
 which returns their specific `ServiceElementTracingData`. This struct contains sufficient information for a service
 element, to obtain a slot for the `SamplePtr`, if one is free. This can be done through a call to
-`EmplaceTypeErasedSamplePtr(SamplePtr<void>, ServiceElementTracingData)`, which will look for an empty slot for a
+`EmplaceTypeErasedSamplePtr(TypeErasedSamplePtr, ServiceElementTracingData)`, which will look for an empty slot for a
 sample pointer in it's allowed range of slots and return an `optional<TraceContextId>` which contains a value if a
 slot could be found and is empty if it could not be. If the returned optional is empty, we will set a data loss flag.
 Otherwise, the `TraceContextId` can be used for calls to the asynchronous `Trace()` overload.

@@ -91,14 +91,7 @@ class SubscriptionStateMachine : public std::enable_shared_from_this<Subscriptio
     // coverity[autosar_cpp14_m3_2_4_violation]
     virtual ~SubscriptionStateMachine() noexcept;
 
-    // Hot-path optimization: current_state_idx_ is atomic, so GetCurrentState() is a simple lock-free atomic load and
-    // is defined inline here. GetNewSamples()/GetNumNewSamplesAvailable() call it on every invocation; taking
-    // state_mutex_ would serialize the hot path against unrelated state-machine operations for no benefit. See the
-    // thread-safety note on GetSlotCollectorLockFree() below for the detailed rationale.
-    SubscriptionStateMachineState GetCurrentState() const noexcept
-    {
-        return current_state_idx_.load();
-    }
+    SubscriptionStateMachineState GetCurrentState() const noexcept;
 
     // State Machine Events. These are modelled by the state machine UML and cause transitions between states. The
     // thread currently processing an event will block until all queued events are processed. All other calls will be
@@ -114,6 +107,10 @@ class SubscriptionStateMachine : public std::enable_shared_from_this<Subscriptio
     void UnsetReceiveHandler();
     void SetSubscriptionStateChangeHandler(SubscriptionStateChangeHandler handler) noexcept;
     void UnsetSubscriptionStateChangeHandler() noexcept;
+    void SetSubscriptionStateChangeTracingCallback(
+        score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept;
+    void SetSubscriptionStateChangeHandlerTracingCallback(
+        score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept;
 
     std::optional<std::uint16_t> GetMaxSampleCount() const noexcept;
 
@@ -141,6 +138,8 @@ class SubscriptionStateMachine : public std::enable_shared_from_this<Subscriptio
     [[nodiscard]] const ElementFqId& GetElementFqId() const& noexcept;
 
   private:
+    SubscriptionStateMachineState GetCurrentStateNoLock() const noexcept;
+
     // Private member methods should be called under lock
     SubscriptionStateBase& GetCurrentEventState() noexcept;
     const SubscriptionStateBase& GetCurrentEventState() const noexcept;
@@ -157,6 +156,9 @@ class SubscriptionStateMachine : public std::enable_shared_from_this<Subscriptio
     SubscriptionData subscription_data_;
     std::optional<std::weak_ptr<ScopedEventReceiveHandler>> event_receiver_handler_;
     std::optional<SubscriptionStateChangeHandler> subscription_state_change_handler_;
+    std::optional<score::cpp::callback<void(SubscriptionState), 64U>> subscription_state_change_tracing_callback_;
+    std::optional<score::cpp::callback<void(SubscriptionState), 64U>>
+        subscription_state_change_handler_tracing_callback_;
     EventReceiveHandlerManager event_receive_handler_manager_;
     ConsumerEventDataControlLocalView<>& event_data_control_local_;
     EventSubscriptionControl<>& subscription_control_;
