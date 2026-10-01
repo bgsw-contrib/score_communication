@@ -66,10 +66,6 @@ class GenericProxyEvent : public GenericProxyEventBinding
     MOCK_METHOD(Result<void>, UnsetSubscriptionStateChangeHandler, (), (noexcept, override));
     MOCK_METHOD(std::optional<std::uint16_t>, GetMaxSampleCount, (), (const, noexcept, override));
     MOCK_METHOD(BindingType, GetBindingType, (), (const, noexcept, override));
-    MOCK_METHOD(void,
-                SetSubscriptionStateChangeTracingCallback,
-                (SubscriptionStateChangeTracingCallback),
-                (noexcept, override));
 
     /// \brief Add a sample to the internal queue of fake events.
     ///

@@ -67,10 +67,9 @@ void SetupSubscriptionStateChangeTracing(ProxyEventTracingData& proxy_event_trac
 void SetupSubscriptionStateChangeHandlerTracing(ProxyEventTracingData& proxy_event_tracing_data,
                                                 ProxyEventBinding& proxy_event_binding) noexcept;
 
-score::cpp::callback<void(void), 128U> CreateTracingReceiveHandler(
-    ProxyEventTracingData& proxy_event_tracing_data,
-    const ProxyEventBinding& proxy_event_binding,
-    EventReceiveHandler handler);
+score::cpp::callback<void(void), 128U> CreateTracingReceiveHandler(ProxyEventTracingData& proxy_event_tracing_data,
+                                                                   const ProxyEventBinding& proxy_event_binding,
+                                                                   EventReceiveHandler handler);
 
 template <typename SampleType, typename ReceiverType>
 auto CreateTracingGetNewSamplesCallback(ProxyEventTracingData& proxy_event_tracing_data,
