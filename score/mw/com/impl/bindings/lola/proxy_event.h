@@ -88,7 +88,9 @@ class ProxyEvent final : public GenericProxyEventBinding
         score::cpp::callback<void(SubscriptionState), 64U> callback) noexcept override
     {
         return subscription_event_state_machine_.SetSubscriptionStateChangeHandlerTracingCallback(std::move(callback));
-    }    /// \brief Notifies the event that the provider service instance that it is connected to (i.e. the
+    }    
+	
+	/// \brief Notifies the event that the provider service instance that it is connected to (i.e. the
     ///        SkeletonEvent) has changed its availability.
     /// \param is_available true if the provider service instance has changed from being unavailable to available.
     ///        false if the providing service instance has changed from being available to unavailable.

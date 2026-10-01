@@ -51,17 +51,6 @@ SubscriptionStateMachine::SubscriptionStateMachine(const QualityType quality_typ
 
 SubscriptionStateMachine::~SubscriptionStateMachine() noexcept = default;
 
-SubscriptionStateMachineState SubscriptionStateMachine::GetCurrentState() const noexcept
-{
-    std::lock_guard<std::mutex> lock{state_mutex_};
-    return GetCurrentStateNoLock();
-}
-
-SubscriptionStateMachineState SubscriptionStateMachine::GetCurrentStateNoLock() const noexcept
-{
-    return current_state_idx_.load();
-}
-
 SubscriptionStateBase& SubscriptionStateMachine::GetCurrentEventState() noexcept
 {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index): current_state_idx_ can't be const expression
@@ -165,7 +154,6 @@ void SubscriptionStateMachine::TransitionToState(const SubscriptionStateMachineS
 {
     GetCurrentEventState().OnExit();
     current_state_idx_.store(newState);
-    const SubscriptionState new_subscription_state = SubscriptionStateMachineStateToSubscriptionState(newState);
     GetCurrentEventState().OnEntry();
 
     // Call tracing callback if set
