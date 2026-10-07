@@ -43,10 +43,10 @@ Targets that declare `@score_communication_crate_index//:futures`:
 
 | Target                                                       | Line       |
 | ------------------------------------------------------------ | ---------- |
-| `score/mw/com/impl/rust/com-api/com-api-runtime-lola/BUILD`  | 33         |
-| `score/mw/com/impl/rust/com-api/com-api-runtime-mock/BUILD`  | 23         |
-| `score/mw/com/rust/score_com_concept/BUILD`                  | 31         |
-| `score/mw/com/example/com-api-example/BUILD`                 | 27, 50, 64 |
+| `score/mw/com/impl/rust/com-api/com-api-runtime-lola/BUILD`  | 32         |
+| `score/mw/com/impl/rust/com-api/com-api-runtime-mock/BUILD`  | 22         |
+| `score/mw/com/rust/score_com_concept/BUILD`                  | 30         |
+| `score/mw/com/example/com-api-example/BUILD`                 | 26, 48, 71 |
 | `score/mw/com/test/basic_rust_api/consumer_async_apis/BUILD` | 39         |
 
 ## Direct call sites
