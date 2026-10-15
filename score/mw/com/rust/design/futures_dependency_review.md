@@ -94,6 +94,7 @@ No `futures::executor` usage was found in production code. The COM API does not 
 
 - `score/mw/com/rust/doc/user_facing_api_examples.md` (lines 342–343, 403)
 - `score/mw/com/example/com-api-example/USAGE.md` (line 47)
+- [The Rust Programming Language — Streams](https://doc.rust-lang.org/book/ch17-04-streams.html) — background on stream-based asynchronous programming in Rust.
 
 ## 3. Crate Review
 
