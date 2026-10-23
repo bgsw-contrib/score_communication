@@ -10,11 +10,20 @@ https://www.apache.org/licenses/LICENSE-2.0
 
 SPDX-License-Identifier: Apache-2.0
 -->
+# COM API — `futures` crate usage review and component classification
 
-# COM API — `futures` crate usage review
+- Component: `futures` crate, classified as a software component in the context of S-CORE
+- Repository: https://github.com/rust-lang/futures-rs
+- Documentation: https://docs.rs/futures/0.3.34/futures/
+- Crate version: 0.3.34 (pinned in `MODULE.bazel.lock`)
+- Additional documentation considered: https://crates.io/crates/futures
+
+Sections 1-10 assess the COM API integration. Section 11 is the crate-level classification and is kept separate.
+
 
 Detailed-design record for issue #1263 It reviews the `futures` crate as used by the Rust COM API and assesses how well the current setup supports safety-related artifacts and future qualification.
 
+All statements were checked against this repository. Items marked **Open** need input or evidence that is not available from the repository (upstream data, stakeholder decisions, CI run results).
 All statements were checked against this repository. Items marked **Open** need input or evidence that is not available from the repository (upstream data, stakeholder decisions, CI run results).
 
 ## Contents
@@ -29,6 +38,7 @@ All statements were checked against this repository. Items marked **Open** need 
 8. [Recommendation](#8-recommendation)
 9. [Next Steps](#9-next-steps)
 10. [Acceptance Criteria Mapping and Review Record](#10-acceptance-criteria-mapping-and-review-record)
+11. [Crate-Level Classification]
 
 ## 1. Pinned Version and Features
 
@@ -38,8 +48,9 @@ All statements were checked against this repository. Items marked **Open** need 
 | Archive | `https://static.crates.io/crates/futures/0.3.34/download` | `MODULE.bazel.lock` |
 | SHA-256 | `9a31d2a3fbaaeb2af2368bbdd904aa8e812d3c04a1ee10d3171f52d556e5d0a3` | `MODULE.bazel.lock` |
 | Enabled features | `alloc`, `async-await`, `default`, `executor`, `futures-executor`, `std` | `MODULE.bazel.lock` (`rust_library` target for `futures`) |
+| Enabled features | `alloc`, `async-await`, `default`, `executor`, `futures-executor`, `std` | `MODULE.bazel.lock` (`rust_library` target for `futures`) |
 | Direct sub-crates | `futures-channel`, `futures-core`, `futures-executor`, `futures-io`, `futures-sink`, `futures-task`, `futures-util` | `MODULE.bazel.lock` |
-| Resolved through | `bazel_dep(name = "score_crates", version = "0.0.11", repo_name = "score_communication_crate_index")` | `MODULE.bazel` |
+| Resolved through | `bazel_dep(name = "score_crates", version = "0.0.13", repo_name = "score_communication_crate_index")` | `MODULE.bazel` |
 
 The version and feature set come from the external `score_crates` module. Changing them is done there, not in this repository.
 
@@ -47,9 +58,13 @@ Targets that declare `@score_communication_crate_index//:futures`:
 
 
 
+
+
 | Target                                                       | Line       |
 
+
 | ------------------------------------------------------------ | ---------- |
+
 
 | `score/mw/com/impl/rust/com-api/com-api-runtime-lola/BUILD`  | 32         |
 
@@ -62,11 +77,34 @@ Targets that declare `@score_communication_crate_index//:futures`:
 | `score/mw/com/test/basic_rust_api/consumer_async_apis/BUILD` | 39         |
 
 ## 2. Direct Call Sites
+## 2. Direct Call Sites
 
 ### Production runtime and public API
 
 | File | Lines | Items used |
 |------|-------|------------|
+| `score/mw/com/rust/score_com_concept/concept.rs` | 57, 931 | `futures::stream::Stream` — return type of `Subscription::to_stream()` |
+| `score/mw/com/impl/rust/com-api/com-api-runtime-lola/consumer.rs` | 40–41 | imports `stream::Stream`, `task::{AtomicWaker, Context, Poll}` |
+| same | 487, 699 | `Arc<AtomicWaker>` in the subscriber and `ReceiveFuture` |
+| same | 676 | `to_stream()` implementation (`SampleStream: Stream`) |
+| same | 925, 993 | `AtomicWaker::new()` / field in the service-discovery future |
+
+`AtomicWaker` usage pattern in the production code:
+
+- `ReceiveFuture::poll`, `SampleStream::poll_next` and `ServiceDiscoveryFuture::poll` call `register(cx.waker())` **before** attempting to receive or reading shared state. The code comments state this is to avoid a missed wake-up against the FFI callback.
+- The C++ discovery callback calls `wake()` after storing handles under a `Mutex`.
+
+No `futures::executor` usage was found in production code. The COM API does not impose an executor on applications.
+
+### Mock, examples, tests
+
+| File | Lines | Items used |
+|------|-------|------------|
+| `score/mw/com/impl/rust/com-api/com-api-runtime-mock/runtime.rs` | 34, 338, 529 | `stream::{self, Stream}`, `stream::empty()`, `executor::block_on` (in a unit test) |
+| `score/mw/com/example/com-api-example/main.rs` | 106–143 | `executor::block_on` |
+| `score/mw/com/example/com-api-example/src/consumer.rs` | 15–16 | `channel::oneshot`, `FutureExt`, `StreamExt` |
+| `score/mw/com/example/com-api-example/tests_using_tokio_runtime.rs` | 41 | `stream::StreamExt` (tokio runtime) |
+| `score/mw/com/test/basic_rust_api/consumer_async_apis/consumer_app.rs` | 31–32, 182 | `channel::oneshot`, `FutureExt`, `StreamExt`, `executor::block_on` |
 | `score/mw/com/rust/score_com_concept/concept.rs` | 57, 931 | `futures::stream::Stream` — return type of `Subscription::to_stream()` |
 | `score/mw/com/impl/rust/com-api/com-api-runtime-lola/consumer.rs` | 40–41 | imports `stream::Stream`, `task::{AtomicWaker, Context, Poll}` |
 | same | 487, 699 | `Arc<AtomicWaker>` in the subscriber and `ReceiveFuture` |
@@ -101,7 +139,7 @@ No `futures::executor` usage was found in production code. The COM API does not 
 | Topic | Current assessment | Status |
 |-------|--------------------|--------|
 | Provenance | Pinned by version and SHA-256 in `MODULE.bazel.lock` (hash re-checked against the lock). Fetched from `static.crates.io`. | Partly verified; **Open:** independent archive verification |
-| Licensing | Expected `MIT OR Apache-2.0` (compatible with Apache-2.0 used by S-CORE). No license text is stored in this repository. | **Open:** confirm in pinned archive |
+| Licensing | `license = "MIT OR Apache-2.0"` in the `Cargo.toml` of the pinned `futures-core` and `futures-util` archives; the `futures-core` archive ships `LICENSE-APACHE` and `LICENSE-MIT`. Not stored in this repository. | Verified in archive (2026-10-22); **Open:** store license texts for all compiled sub-crates |
 | Maintenance | Upstream is `rust-lang/futures-rs`. No dated review is stored. | **Open:** dated release/activity/advisory review (also confirm that `0.3.34` is the intended release) |
 | Safety relevance | `Stream`, `AtomicWaker`, `Context`, `Poll` are on the production receive and discovery paths. | **Open:** focused analysis (see section 6) |
 | API stability | `futures::Stream` is part of the public API; upgrades must stay source-compatible. | Document compatibility rule |
@@ -136,14 +174,20 @@ Missed wake-ups, stalled operations or concurrent access are failure modes to ev
 | `Context` / `Poll` (production) | Directly replaceable | Available in `std::task` | **Switch to `std::task`** after build check |
 | Example `block_on` | Replaceable | Example code only | Optional |
 | Mock and test helpers | Replaceable | Mock, test and example code only | Evaluate separately |
+|------------|-------------|--------|----------------|
+| `Stream` trait (public API) | Cannot be removed without an API change | `Subscription::to_stream()` exposes `futures::Stream` | **Retain** |
+| `AtomicWaker` (production) | Possible via a smaller sub-crate | Needed for wake-up of pending receives and discovery | **Evaluate sub-crate** |
+| `Context` / `Poll` (production) | Directly replaceable | Available in `std::task` | **Switch to `std::task`** after build check |
+| Example `block_on` | Replaceable | Example code only | Optional |
+| Mock and test helpers | Replaceable | Mock, test and example code only | Evaluate separately |
 
 ### Reduction conclusion
 
-The public `Stream` return type keeps a `futures` ecosystem dependency. The production footprint could shrink by depending only on the needed `futures-*` sub-crates (the trait is defined in `futures-core`; the sub-crate providing `AtomicWaker` must be confirmed) and using `std::task` for `Context` and `Poll`. The full `futures` crate (with `executor`) would remain for mock, examples and tests.
+The public `Stream` return type keeps a `futures` ecosystem dependency. `Stream` is defined in `futures-core` (`src/stream.rs`). `AtomicWaker` is defined in `futures-core` under `task::__internal` (a `#[doc(hidden)]` module); its public path is `futures_util::task::AtomicWaker`, and `futures::task` is `futures_util::task` (`futures-0.3.34/src/lib.rs`, line 131). A narrower production dependency therefore means either `futures-util` (about 16k lines) or the hidden `__internal` path of `futures-core`, which carries no stability promise. `Context` and `Poll` are `core::task` re-exports, so `std::task` provides the same types. The full `futures` crate (with `executor`) would remain for mock, examples and tests.
 
 Prerequisites:
 
-- Confirm which sub-crate exports `AtomicWaker` and `Stream`.
+- Decide whether depending on a `doc(hidden)` path is acceptable (not recommended).
 - Check whether `score_crates` must change.
 - Verify that the resulting graph builds and passes the relevant tests.
 
@@ -314,7 +358,7 @@ The presence of an artifact does not establish its completeness or acceptance fo
 |----------|-------------|------------|
 | A. Retain upstream, qualified use | Fill the gaps in section 6, document the contracts COM relies on, verify them by tests and analysis. | Feasible; proportionate; preferred |
 | B. A plus deeper dependency review | Additionally review upstream `unsafe` paths for `AtomicWaker` and `Stream`, if stakeholders require it. | Feasible; scope depends on required assurance level |
-| C. Narrower dependency | Use `futures-core` and the `AtomicWaker` provider instead of the facade; `std::task` for `Context`/`Poll`. | Feasible; reduces the review surface; can combine with A |
+| C. Narrower dependency | Use `futures-core` and the `AtomicWaker` provider instead of the facade; `std::task` for `Context`/`Poll`. | Feasibility not confirmed (needs a `score_crates` change and use of a `doc(hidden)` path); would reduce the review surface; can combine with A |
 | D. S-CORE-maintained fork or in-house waker/stream | Own the implementation. | Not justified now; revisit only for a concrete reason |
 
 Reasons that would justify reconsidering D: upstream unmaintained, an unpatched critical defect, or stakeholder confirmation that upstream evidence is mandatory and unobtai-nable.
@@ -372,3 +416,131 @@ The criterion on stakeholder review is met when the reviewers below have reviewe
 | Safety | To be completed | To be completed | Pending |
 
 On approval, update the **Proposed decision** in section 5 to **Decision** and resolve or re-assign the **Open** items.
+
+## 11. Crate-Level Classification 
+
+**Status: provisional, pending evidence. This is not a qualification or certification claim.** The outcome is only a proposal until the S-CORE Safety team reviews it. This section assesses `futures` itself, independent of the COM API (sections 1-10) and of the retain decision (section 5).
+
+### 11.0 Method and sources
+
+| Rule | Source |
+|---|---|
+| Record the qualification target first: crate name/version, repository and revision, enabled features, target platforms, dependency baseline | [`rust_crate_safety_guideline.rst`](https://github.com/eclipse-score/score-crates/blob/main/docs/rust_crate_safety_guideline.rst), Step 1 |
+| Three tables: P (HE/PE/NE), C (NH/HM/NM), CLAS_OUT (Q/QR/NQ); the outcome is an initial proposal, final after Safety team review | same, Steps 1 and 2 |
+| External dependencies of the crate must also go through the process or be replaced | same, Step 1 ("External dependencies") |
+| Q/QR then address findings (coverage, docs, requirements, design, traceability); NQ cannot be used in the safety-critical codebase | same, Steps 2-4 |
+| P=1: no measure indicates PE/NE; P=2: some PE/NE but gaps acceptable (low or manageable risk); P=3 otherwise | S-CORE safety qualification guidelines, Step 1 |
+| C=1: no HM/NM; C=2: some HM/NM but acceptable; C=3 otherwise | same, Step 2 |
+| Matrix: C=1 gives Q, Q, QR for P=1, 2, 3; C=2 gives QR for all P; C=3 gives QR, QR, NQ | same, Step 3 |
+| Activities: Q follows the qualification process; QR follows the pre-existing architectural element process; NQ not for safety context | same, Step 5 |
+
+No threshold for "high" LoC is defined. Whether the process classifies a whole crate, a sub-crate or a used subset is not stated explicitly; refer to the applicable S-CORE safety guidelines which speak of "the crate" with its enabled features and dependency baseline (see 11.6).
+
+### 11.1 Qualification target record
+
+| Item | Value | Evidence |
+|---|---|---|
+| Crate / version | `futures` 0.3.34 | `MODULE.bazel.lock` |
+| Archive | `static.crates.io/crates/futures/0.3.34/download` | SHA-256 `9a31d2a3...e5d0a3` matches the lock (`sha256sum`, 2026-10-22) |
+| Upstream revision | Not determined | **Open:** tag `v0.3.34` commit not inspected |
+| Enabled features | `alloc`, `async-await`, `default`, `executor`, `futures-executor`, `std` | `MODULE.bazel.lock`; **Open:** feature sets of the other sub-crates |
+| Target platforms | Linux and QNX builds exist in this repository | **Open:** confirm with architecture |
+| Dependency baseline | `score_crates` 0.0.13 | `MODULE.bazel` (line 47) |
+
+### 11.2 Features used
+
+| Feature / item | Defined in (pinned source) | Used by | Scope |
+|---|---|---|---|
+| `Stream` | `futures-core` `src/stream.rs` | `Subscription::to_stream()` (public API), LoLa and mock runtime | Production |
+| `AtomicWaker` | `futures-core` `src/task/__internal/atomic_waker.rs` (`doc(hidden)` module); re-exported by `futures-util` `src/task/mod.rs` | `consumer.rs` | Production |
+| `Context`, `Poll` | `core::task` (re-exported by `futures-core`, `futures-task`, `futures-util`) | `consumer.rs` | Production |
+| `executor::block_on` | `futures-executor` | mock test, example, `consumer_async_apis` | Non-production |
+| `channel::oneshot` | `futures-channel` | example, `consumer_async_apis` | Non-production |
+| `FutureExt`, `StreamExt`, `stream::empty` | `futures-util` | example, mock, tests | Non-production |
+
+The facade enables more than production needs (`executor`, `futures-executor`); this comes from the shared `score_crates` configuration.
+
+### 11.3 Current state in `score-crates`
+
+- `docs/` in `score-crates` main (fetched 2026-10-22) contains `safety_mgt`, `verification_report`, `rust_crate_safety_guideline.rst` and index files. There is no `futures` entry. Status: **not classified**.
+- Expected layout: `component_classification.rst`, `requirement/`, `architecture/`, `safety_analysis/`, `component/`, `BUILD`. The guideline also names a `design/` directory, the shared `assumed_system_requirements.trlc` and `feature_requirements.trlc`, a per-crate `component_requirements.trlc`, AoU and failure modes.
+- Known limitation: Rust test results are not shown in LOBSTER reports ([lobster#589](https://github.com/bmw-software-engineering/lobster/issues/589)).
+
+### 11.4 Measurements (pinned archives, 2026-10-22)
+
+Method: archives `https://static.crates.io/crates/<crate>/<crate>-0.3.34.crate` unpacked in `/tmp/fut`. LoC = non-blank lines in `src/**/*.rs` not starting with `//`, excluding `tests` directories. Unsafe = lines in `src/**/*.rs` containing the keyword `unsafe` that do not start with `//`; these are textual keyword matches, not a count of unsafe operations or blocks. Both are upper bounds: `cfg`-disabled code is counted and the LoUC / LoUC+N (safety-note) split required by the classification indicators was **not** done.
+
+| Crate | LoC | Source lines containing `unsafe` (preliminary) |
+|---|---|---|
+| `futures-core` | 306 | 5, checked line by line against the 0.3.34 source on 2026-10-22: `atomic_waker.rs` lines 273 and 385 are `unsafe` blocks, lines 422 and 423 are `unsafe impl Send/Sync` declarations, `stream.rs` line 232 is an `unsafe` block calling `map_unchecked_mut`. The script's 6th raw match (`lib.rs` line 11, the word `unsafe_op_in_unsafe_fn` inside a comment in a lint attribute) is not code and is excluded manually. |
+| `futures-task` | 509 | 65 |
+| `futures-util` | 16287 | 136 |
+| `futures-channel` | 1334 | 23 |
+| `futures-executor` | 599 | 10 |
+| `futures-io` | 296 | 1 |
+| `futures-sink` | 119 | 3 |
+| `futures` (facade) | 94 | 1 |
+| **Subtotal of listed futures workspace crates** | **19544** | **about 245 (counts for crates other than `futures-core` not individually verified)** |
+
+This subtotal covers the eight listed crate archives only. It is not a verified Bazel dependency-closure measurement and does not establish the complete third-party dependency scope.
+
+**Lockfile-derived dependency inventory.** `MODULE.bazel.lock` identifies the eight listed `futures` workspace crates and the additional dependencies `futures-macro`, `memchr` 2.8.3, `slab` 0.4.12 and `pin-project-lite` 0.2.17; it lists `futures-util` features `async-await-macro`, `channel`, `io`, `sink`, `slab`, `memchr` and `std`. This inventory has **not** been verified against the Bazel-resolved dependency graph (`bazel query` failed offline because the `score_crates` 0.0.13 archive could not be downloaded), so the complete compiled dependency closure is not yet known. The additional dependencies are not yet included in the line-count or unsafe-code measurements.
+
+Not measured: the compiled closure under Bazel (which `futures-util` features and third-party dependencies such as `slab`, `memchr`, `pin-project-lite`, `futures-macro` are built), coverage, Miri, Clippy. The published archives contain no test files, so upstream tests and CI must be taken from the upstream repository at tag `v0.3.34` (not inspected).
+
+Reproduce the closure with `bazel query 'deps(@score_communication_crate_index//:futures)'` and review the resolved features in `MODULE.bazel.lock`.
+
+### 11.5 Indicator assessment (provisional)
+
+No upstream repository evidence (CI, issues, rustdoc content) was inspected, so no indicator is rated. Every rating is **Not rated — evidence pending** until the applicable evidence has been reviewed. The notes column records hypotheses only and is not a rating.
+
+**P (process)**
+
+| Id | Indicator | Evidence found | Missing | Rating | Notes (hypothesis, not a rating) | Follow-up |
+|---|---|---|---|---|---|---|
+| 1 | Rules and state-of-the-art processes for design, implementation, verification | None collected | Upstream CI: tests, Clippy, Miri, coverage job, changelog, advisories | Not rated — evidence pending | Gaps may exist | Inspect `futures-rs` CI at `v0.3.34` |
+| 2 | Requirements available | None in S-CORE form | Requirements for `Stream` and `AtomicWaker` behaviour; rustdoc not reviewed | Not rated — evidence pending | Requirements may exist only in rustdoc, or not at all | Review rustdoc; write TRLC requirements |
+| 3 | Specification (architecture) | Source comments describe the trait and waker contract | Specification document | Not rated — evidence pending | Specification may be partial | Review rustdoc and `AtomicWaker` docs |
+| 4 | Design specification | None found | Static design for the used parts | Not rated — evidence pending | Design documents may be absent | Create design in `score-crates` |
+| 5 | Configuration specification | Cargo feature declarations only | Feature and platform record (11.1, partly done); whether other configuration data exists and is specified | Not rated — evidence pending | Feature declarations alone do not establish HE | Confirm indicator interpretation with Safety team |
+| 6 | Verification measures | No tests in archives | Upstream test report, coverage for the agreed scope | Not rated — evidence pending | None | Run upstream tests and coverage |
+
+P cannot be set yet. P=2 requires the Safety team to accept the identified gaps as low or manageable risk; that is not assumed here.
+
+**C (complexity)**
+
+| Id | Indicator | Full facade closure | `futures-core` only | Rating |
+|---|---|---|---|---|
+| 1 | Lines of code | 19544 (11.4) | 306 | Not rated — evidence pending (threshold to be defined) |
+| 2 | Unsafe code | about 245 source lines containing `unsafe` (preliminary upper bound) | 5 source lines containing `unsafe` (four in `AtomicWaker`, one unsafe block involving `map_unchecked_mut`; see 11.4) | Not rated — evidence pending (full unsafe analysis required) |
+| 3 | Tests and coverage | Not measured | Not measured | Not rated — evidence pending |
+| 4 | Public interfaces | Not counted | Not counted | Not rated — evidence pending |
+| 5 | Parameters | Not counted | Not counted | Not rated — evidence pending |
+
+Note: `futures` has custom atomic code and manual `Send`/`Sync` implementations in `AtomicWaker`, which requires careful safety analysis during qualification.
+
+### 11.6 Classification outcome
+
+**Provisional / pending evidence.** No final classification outcome is proposed at this stage because the P and C ratings have not been fully established against the classification indicators.
+
+The measured source-line counts and preliminary unsafe-code counts indicate that the assessment scope and complexity require further investigation. However, these measurements do not by themselves establish C=2 or C=3. Complete the indicator assessments using the classification method, document the rationale for each rating, and obtain Safety team review before proposing a final CLAS_OUT.
+
+The classification matrix (11.0) will be applied once P and C have been justified. The retain decision in Section 5 remains separate from this classification.
+
+**Scope question.** The unit is the crate with its enabled features, and its external dependencies must also be classified or replaced. Reviewing only the APIs used does not shrink the classified scope unless the compiled dependency graph shrinks. Narrowing options: (a) depend on `futures-util` directly (about 16k lines, little reduction); (b) `futures-core` plus `std::task`, which reaches `AtomicWaker` only through the `doc(hidden)` `__internal` path and needs a `score_crates` change (`score-crates` `MODULE.bazel` on main declares only `futures` as a spec, so `futures-core` is not a direct target; not confirmed for 0.0.13); (c) an S-CORE-owned waker (not assessed). Feasibility under `score_crates` and Bazel was not tested; maintainers and the Safety team must confirm.
+
+### 11.7 Actions
+
+Required before classification:
+
+1. `score-crates`, `docs/futures/docs/component_classification.rst`: write the report from 11.1, 11.4 and 11.5.
+2. Maintainers and Safety team: agree the scope (full closure or narrowed) and whether the `__internal` path is acceptable.
+3. Re-run the `bazel query` in 11.4 with network access and compare it with the lockfile-derived dependency inventory.
+4. Inspect `futures-rs` at `v0.3.34` (CI, tests, Miri, advisories, rustdoc) and run upstream coverage for the agreed scope.
+5. Count unsafe lines with and without safety notes for the agreed scope.
+
+Subsequent qualification activities (subject to the applicable CLAS_OUT process and Safety team review):
+
+6. `score-crates`: TRLC requirements (shared ASR and feature files, per-crate component requirements), AoU, failure modes (missed wake-up, stalled stream), design, traced tests, LOBSTER report.
+7. Raise a change request so the module safety plan follows the CLAS_OUT activity.
+8. Align `score_crates` feature set with the narrowed scope only if approach C is chosen.
