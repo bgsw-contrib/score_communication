@@ -24,6 +24,7 @@ Sections 1-10 assess the COM API integration. Section 11 is the crate-level clas
 Detailed-design record for issue #1263 It reviews the `futures` crate as used by the Rust COM API and assesses how well the current setup supports safety-related artifacts and future qualification.
 
 All statements were checked against this repository. Items marked **Open** need input or evidence that is not available from the repository (upstream data, stakeholder decisions, CI run results).
+All statements were checked against this repository. Items marked **Open** need input or evidence that is not available from the repository (upstream data, stakeholder decisions, CI run results).
 
 ## Contents
 
@@ -47,6 +48,7 @@ All statements were checked against this repository. Items marked **Open** need 
 | Archive | `https://static.crates.io/crates/futures/0.3.34/download` | `MODULE.bazel.lock` |
 | SHA-256 | `9a31d2a3fbaaeb2af2368bbdd904aa8e812d3c04a1ee10d3171f52d556e5d0a3` | `MODULE.bazel.lock` |
 | Enabled features | `alloc`, `async-await`, `default`, `executor`, `futures-executor`, `std` | `MODULE.bazel.lock` (`rust_library` target for `futures`) |
+| Enabled features | `alloc`, `async-await`, `default`, `executor`, `futures-executor`, `std` | `MODULE.bazel.lock` (`rust_library` target for `futures`) |
 | Direct sub-crates | `futures-channel`, `futures-core`, `futures-executor`, `futures-io`, `futures-sink`, `futures-task`, `futures-util` | `MODULE.bazel.lock` |
 | Resolved through | `bazel_dep(name = "score_crates", version = "0.0.13", repo_name = "score_communication_crate_index")` | `MODULE.bazel` |
 
@@ -56,9 +58,13 @@ Targets that declare `@score_communication_crate_index//:futures`:
 
 
 
+
+
 | Target                                                       | Line       |
 
+
 | ------------------------------------------------------------ | ---------- |
+
 
 | `score/mw/com/impl/rust/com-api/com-api-runtime-lola/BUILD`  | 32         |
 
@@ -71,11 +77,34 @@ Targets that declare `@score_communication_crate_index//:futures`:
 | `score/mw/com/test/basic_rust_api/consumer_async_apis/BUILD` | 39         |
 
 ## 2. Direct Call Sites
+## 2. Direct Call Sites
 
 ### Production runtime and public API
 
 | File | Lines | Items used |
 |------|-------|------------|
+| `score/mw/com/rust/score_com_concept/concept.rs` | 57, 931 | `futures::stream::Stream` — return type of `Subscription::to_stream()` |
+| `score/mw/com/impl/rust/com-api/com-api-runtime-lola/consumer.rs` | 40–41 | imports `stream::Stream`, `task::{AtomicWaker, Context, Poll}` |
+| same | 487, 699 | `Arc<AtomicWaker>` in the subscriber and `ReceiveFuture` |
+| same | 676 | `to_stream()` implementation (`SampleStream: Stream`) |
+| same | 925, 993 | `AtomicWaker::new()` / field in the service-discovery future |
+
+`AtomicWaker` usage pattern in the production code:
+
+- `ReceiveFuture::poll`, `SampleStream::poll_next` and `ServiceDiscoveryFuture::poll` call `register(cx.waker())` **before** attempting to receive or reading shared state. The code comments state this is to avoid a missed wake-up against the FFI callback.
+- The C++ discovery callback calls `wake()` after storing handles under a `Mutex`.
+
+No `futures::executor` usage was found in production code. The COM API does not impose an executor on applications.
+
+### Mock, examples, tests
+
+| File | Lines | Items used |
+|------|-------|------------|
+| `score/mw/com/impl/rust/com-api/com-api-runtime-mock/runtime.rs` | 34, 338, 529 | `stream::{self, Stream}`, `stream::empty()`, `executor::block_on` (in a unit test) |
+| `score/mw/com/example/com-api-example/main.rs` | 106–143 | `executor::block_on` |
+| `score/mw/com/example/com-api-example/src/consumer.rs` | 15–16 | `channel::oneshot`, `FutureExt`, `StreamExt` |
+| `score/mw/com/example/com-api-example/tests_using_tokio_runtime.rs` | 41 | `stream::StreamExt` (tokio runtime) |
+| `score/mw/com/test/basic_rust_api/consumer_async_apis/consumer_app.rs` | 31–32, 182 | `channel::oneshot`, `FutureExt`, `StreamExt`, `executor::block_on` |
 | `score/mw/com/rust/score_com_concept/concept.rs` | 57, 931 | `futures::stream::Stream` — return type of `Subscription::to_stream()` |
 | `score/mw/com/impl/rust/com-api/com-api-runtime-lola/consumer.rs` | 40–41 | imports `stream::Stream`, `task::{AtomicWaker, Context, Poll}` |
 | same | 487, 699 | `Arc<AtomicWaker>` in the subscriber and `ReceiveFuture` |
@@ -139,6 +168,12 @@ Missed wake-ups, stalled operations or concurrent access are failure modes to ev
 ## 4. Reduction Analysis
 
 | Usage site | Feasibility | Impact | Recommendation |
+|------------|-------------|--------|----------------|
+| `Stream` trait (public API) | Cannot be removed without an API change | `Subscription::to_stream()` exposes `futures::Stream` | **Retain** |
+| `AtomicWaker` (production) | Possible via a smaller sub-crate | Needed for wake-up of pending receives and discovery | **Evaluate sub-crate** |
+| `Context` / `Poll` (production) | Directly replaceable | Available in `std::task` | **Switch to `std::task`** after build check |
+| Example `block_on` | Replaceable | Example code only | Optional |
+| Mock and test helpers | Replaceable | Mock, test and example code only | Evaluate separately |
 |------------|-------------|--------|----------------|
 | `Stream` trait (public API) | Cannot be removed without an API change | `Subscription::to_stream()` exposes `futures::Stream` | **Retain** |
 | `AtomicWaker` (production) | Possible via a smaller sub-crate | Needed for wake-up of pending receives and discovery | **Evaluate sub-crate** |

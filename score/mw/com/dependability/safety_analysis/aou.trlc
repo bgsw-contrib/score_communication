@@ -446,6 +446,17 @@ ScoreReq.AoU LoLaSpecificQnxMessagingEndPointsOnlyAccessedThroughLoLa {
     ]
 }
 
+ScoreReq.AoU ArtifactsRequireManualReview {
+    description = "Input artifacts (C++ service-interface definitions and mw::config) shall be manually reviewed for correctness"
+    safety = ScoreReq.Asil.B
+    note = "C++ service-interface definitions and mw::config are hand-written artifacts and might not be in sync or match."
+    version = 1
+    root_causes = [
+        mw_com_fta.MissingSyncCodeAndConfiguration,
+        mw_com_fta.DifferentRevisionsForProxyAndSkeletonBuilt
+    ]
+}
+
 /* broken_link_c/issue/5835457 */
 ScoreReq.AoU UnsupportedDataTypes {
     // mitigates = "MemoryAllocatedInWrongSection"
@@ -545,5 +556,19 @@ ScoreReq.AoU NoGuaranteeOnSubscriptionStateCorrectness {
     description = "For safety critical use cases, an application must treat a SubscriptionState of kSubscribed or kSubscriptionPending (returned by GetSubscriptionState() or reported by the SubscriptionStateChangeHandler) as the same."
     safety = ScoreReq.Asil.B
     note = "On a technical level, kSubscribed and kSubscriptionPending cannot be reliably differentiated, see {{SubscriptionState}} Component requirement for more details"
+    version = 1
+}
+
+ScoreReq.AoU NoCreationOfServiceElements {
+    description = "It is not allowed to create instances of event, field and method classes on the proxy and skeleton side."
+    safety = ScoreReq.Asil.B
+    note = "Instances of these classes can only exist in the context of enclosing ProxyWrapperClass or SkeletonWrapperClass. They can only be created by the score::mw::com framework, which ensures that they are correctly initialized and registered."
+    version = 1
+}
+
+ScoreReq.AoU NoMoveOfServiceElements {
+    description = "It is not allowed to move instances of event, field and method classes on the proxy and skeleton side independently of the parent proxy / skeleton."
+    safety = ScoreReq.Asil.B
+    note = "Moving these members would leave the instances of the classes, which contain these members in an invalid state, which would lead to undefined behavior."
     version = 1
 }
