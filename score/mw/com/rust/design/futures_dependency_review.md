@@ -468,7 +468,7 @@ The facade enables more than production needs (`executor`, `futures-executor`); 
 
 ### 11.4 Measurements (pinned archives, 2026-10-22)
 
-Method: archives `https://static.crates.io/crates/<crate>/<crate>-0.3.34.crate` unpacked in `/tmp/fut`. LoC = non-blank lines in `src/**/*.rs` not starting with `//`, excluding `tests` directories. Unsafe = lines in `src/**/*.rs` containing the keyword `unsafe` that do not start with `//`; these are textual keyword matches, not a count of unsafe operations or blocks. Both are upper bounds: `cfg`-disabled code is counted and the LoUC / LoUC+N (safety-note) split required by the pastey table was **not** done.
+Method: archives `https://static.crates.io/crates/<crate>/<crate>-0.3.34.crate` unpacked in `/tmp/fut`. LoC = non-blank lines in `src/**/*.rs` not starting with `//`, excluding `tests` directories. Unsafe = lines in `src/**/*.rs` containing the keyword `unsafe` that do not start with `//`; these are textual keyword matches, not a count of unsafe operations or blocks. Both are upper bounds: `cfg`-disabled code is counted and the LoUC / LoUC+N (safety-note) split required by the classification indicators was **not** done.
 
 | Crate | LoC | Source lines containing `unsafe` (preliminary) |
 |---|---|---|
