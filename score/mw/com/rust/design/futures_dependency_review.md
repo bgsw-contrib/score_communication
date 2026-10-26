@@ -84,7 +84,7 @@ Verified by reading `consumer.rs` (source inspection only; no test or run eviden
 - The discovery callback (a Rust closure, lines 938–943, invoked by the C++ side) stores the handles inside `if let Ok(mut state) = state_ref.lock()` and then calls `wake()` (line 942) after that block. If the lock is poisoned, the handles are not stored but `wake()` is still called.
 - The subscriber receive callback (line 517) only calls `wake()`.
 
-**Open:** the memory-ordering and synchronization guarantees of `AtomicWaker` between `register` and `wake` across threads are not analysed here; the "no missed wake-up" property is stated in code comments and is not verified.
+**Open:** the memory-ordering and synchronization guarantees of `AtomicWaker` across threads are not analysed here. The upstream rustdoc of `AtomicWaker` (`futures-core` 0.3.34, `atomic_waker.rs`) states that consumers should call `register` before checking the result and producers `wake` after producing it, that `wake` before `register` is a no-op, and that `register` acquires memory released by earlier `wake` calls. This matches the order in the COM code above, but the documentation is a claim, not a verification; the "no missed wake-up" property is not tested or analysed.
 
 No `futures::executor` usage was found in production code. The COM API does not impose an executor on applications.
 
@@ -392,13 +392,13 @@ On approval, update the **Proposed decision** in section 5 to **Decision** and r
 | Rule | Source |
 |---|---|
 | Record the qualification target first: crate name/version, repository and revision, enabled features, target platforms, dependency baseline | [`rust_crate_safety_guideline.rst`](https://github.com/eclipse-score/score-crates/blob/main/docs/rust_crate_safety_guideline.rst), Step 1 |
-| Three tables: P (HE/PE/NE), C (NH/HM/NM), CLAS_OUT (Q/QR/NQ); the outcome is an initial proposal, final after Safety team review | same, Steps 1 and 2 |
-| External dependencies of the crate must also go through the process or be replaced | same, Step 1 ("External dependencies") |
-| Q/QR then address findings (coverage, docs, requirements, design, traceability); NQ cannot be used in the safety-critical codebase | same, Steps 2-4 |
+| Three tables: P (HE/PE/NE), C (NH/HM/NM), CLAS_OUT (Q/QR/NQ); the outcome is an initial proposal, final after Safety team review | `rust_crate_safety_guideline.rst`, Steps 1 and 2 |
+| External dependencies of the crate must also go through the process or be replaced | `rust_crate_safety_guideline.rst`, Step 1 ("External dependencies") |
+| Q/QR then address findings (coverage, docs, requirements, design, traceability); NQ cannot be used in the safety-critical codebase | `rust_crate_safety_guideline.rst`, Steps 2-4 |
 | P=1: no measure indicates PE/NE; P=2: some PE/NE but gaps acceptable (low or manageable risk); P=3 otherwise | S-CORE safety qualification guidelines, Step 1 |
-| C=1: no HM/NM; C=2: some HM/NM but acceptable; C=3 otherwise | same, Step 2 |
-| Matrix: C=1 gives Q, Q, QR for P=1, 2, 3; C=2 gives QR for all P; C=3 gives QR, QR, NQ | same, Step 3 |
-| Activities: Q follows the qualification process; QR follows the pre-existing architectural element process; NQ not for safety context | same, Step 5 |
+| C=1: no HM/NM; C=2: some HM/NM but acceptable; C=3 otherwise | S-CORE safety qualification guidelines, Step 2 |
+| Matrix: C=1 gives Q, Q, QR for P=1, 2, 3; C=2 gives QR for all P; C=3 gives QR, QR, NQ | S-CORE safety qualification guidelines, Step 3 |
+| Activities: Q follows the qualification process; QR follows the pre-existing architectural element process; NQ not for safety context | S-CORE safety qualification guidelines, Step 5 |
 
 No threshold for "high" LoC is defined. Whether the process classifies a whole crate, a sub-crate or a used subset is not stated explicitly; refer to the applicable S-CORE safety guidelines which speak of "the crate" with its enabled features and dependency baseline (see 11.6).
 
@@ -452,24 +452,24 @@ This subtotal covers the eight listed crate archives only. It is not a verified 
 
 **Lockfile-derived dependency inventory.** `MODULE.bazel.lock` identifies the eight listed `futures` workspace crates and the additional dependencies `futures-macro`, `memchr` 2.8.3, `slab` 0.4.12 and `pin-project-lite` 0.2.17; it lists `futures-util` features `async-await-macro`, `channel`, `io`, `sink`, `slab`, `memchr` and `std`. On 2026-10-26, with network access, `bazel query 'kind(rust_.*, deps(@score_communication_crate_index//:futures))'` returned the same twelve crates plus `proc-macro2` 1.0.107, `quote` 1.0.47, `syn` 3.0.3 and `unicode-ident` 1.0.24 (dependencies of `futures-macro`, a proc macro) and rules_rust tooling targets. The enabled feature sets per crate were not extracted from the query, and `proc-macro2`, `quote`, `syn`, `unicode-ident` are not included in the measurements. Text-based counts (same method) for the three additional lockfile crates: `memchr` 8061 LoC / 342 lines containing `unsafe`; `slab` 752 / 6; `pin-project-lite` 1324 / 18; `futures-macro` 539 / 2. The eight-crate figures were reproduced on the same date, except that the raw `futures-core` match count is 6 (5 after the manual exclusion described above), so the subtotal of about 245 reflects the raw matches. Whether each crate is compiled for production targets (as opposed to build or host tooling) is **Open**.
 
-Not measured: per-crate enabled features in the Bazel closure, the measurements of `proc-macro2`, `quote`, `syn`, `unicode-ident`, coverage, Miri, Clippy. The published archives contain no test files, so upstream tests and CI must be taken from the upstream repository at tag `0.3.34` (not inspected).
+Not measured: per-crate enabled features in the Bazel closure, the measurements of `proc-macro2`, `quote`, `syn`, `unicode-ident`, coverage, Clippy. The published archives contain no test files. The upstream CI workflow at tag `0.3.34` was read on 2026-10-26 (see 11.5); upstream test sources and results were not inspected or run.
 
 Reproduce the closure with `bazel query 'deps(@score_communication_crate_index//:futures)'` and review the resolved features in `MODULE.bazel.lock`.
 
 ### 11.5 Indicator assessment (provisional)
 
-No upstream repository evidence (CI, issues, rustdoc content) was inspected, so no indicator is rated. Every rating is **Not rated — evidence pending** until the applicable evidence has been reviewed. The notes column records hypotheses only and is not a rating.
+On 2026-10-26 the upstream CI workflow (`.github/workflows/ci.yml` at tag `0.3.34`) and the `AtomicWaker` rustdoc in the pinned archive were read; issues, CI run results and the remaining rustdoc were not inspected. No indicator is rated. Every rating is **Not rated — evidence pending** until the Safety team has reviewed the evidence. The notes column records hypotheses only and is not a rating.
 
 **P (process)**
 
 | Id | Indicator | Evidence found | Missing | Rating | Notes (hypothesis, not a rating) | Follow-up |
 |---|---|---|---|---|---|---|
-| 1 | Rules and state-of-the-art processes for design, implementation, verification | None collected | Upstream CI: tests, Clippy, Miri, coverage job, changelog, advisories | Not rated — evidence pending | Gaps may exist | Inspect `futures-rs` CI at `0.3.34` |
-| 2 | Requirements available | None in S-CORE form | Requirements for `Stream` and `AtomicWaker` behaviour; rustdoc not reviewed | Not rated — evidence pending | Requirements may exist only in rustdoc, or not at all | Review rustdoc; write TRLC requirements |
-| 3 | Specification (architecture) | Source comments describe the trait and waker contract | Specification document | Not rated — evidence pending | Specification may be partial | Review rustdoc and `AtomicWaker` docs |
-| 4 | Design specification | None found | Static design for the used parts | Not rated — evidence pending | Design documents may be absent | Create design in `score-crates` |
-| 5 | Configuration specification | Cargo feature declarations only | Feature and platform record (11.1, partly done); whether other configuration data exists and is specified | Not rated — evidence pending | Feature declarations alone do not establish HE | Confirm indicator interpretation with Safety team |
-| 6 | Verification measures | No tests in archives | Upstream test report, coverage for the agreed scope | Not rated — evidence pending | None | Run upstream tests and coverage |
+| 1 | Rules and state-of-the-art processes for design, implementation, verification | Upstream `ci.yml` (tag `0.3.34`, runs on push to `main` and release branches and nightly): `cargo test --workspace --all-features` (debug and release), MSRV builds, `no-std` builds, feature powerset check, Miri (`cargo miri test`), sanitizer runs (address, memory, thread), minimal-versions build, tidy. The Clippy job is commented out with the note that the branch is no longer actively developed. No coverage, `cargo-audit` or `cargo-deny` job found. | CI run results; changelog; complete advisory review (section 3) | Not rated — evidence pending | CI definition is broad for tests and Miri; the CI file shows what is configured, not that it passes | Safety team to assess |
+| 2 | Requirements available | None in S-CORE form; `AtomicWaker` rustdoc states a usage and memory-ordering contract (see section 2) | Requirements for `Stream` behaviour; rustdoc of `Stream` not reviewed | Not rated — evidence pending | Contract exists as rustdoc, not as requirements | Write TRLC requirements (pending: agreed scope and CLAS_OUT outcome) |
+| 3 | Specification (architecture) | Source comments and `AtomicWaker` rustdoc describe the waker contract | Specification document; `Stream` rustdoc not reviewed | Not rated — evidence pending | Specification may be partial | Review `Stream` rustdoc |
+| 4 | Design specification | None found | Static design for the used parts | Not rated — evidence pending | Design documents may be absent | Create design in `score-crates` (pending: depends on the agreed scope and the CLAS_OUT outcome) |
+| 5 | Configuration specification | Cargo feature declarations only | Feature and platform record (11.1, partly done); whether other configuration data exists and is specified | Not rated — evidence pending | Feature declarations alone do not establish HE | Confirm indicator interpretation with Safety team (pending: Safety team decision) |
+| 6 | Verification measures | No tests in archives; upstream CI defines tests, Miri and sanitizer jobs (see row 1) | Upstream test sources and results, coverage for the agreed scope | Not rated — evidence pending | None | Run upstream tests and coverage (pending: scope not agreed) |
 
 P cannot be set yet. P=2 requires the Safety team to accept the identified gaps as low or manageable risk; that is not assumed here.
 
@@ -502,7 +502,7 @@ Required before classification:
 1. `score-crates`, `docs/futures/docs/component_classification.rst`: write the report from 11.1, 11.4 and 11.5.
 2. Maintainers and Safety team: agree the scope (full closure or narrowed) and whether the `__internal` path is acceptable.
 3. Extract per-crate enabled features from the `bazel query` closure (crate list obtained on 2026-10-26, see 11.4) and decide which crates are compiled for production targets.
-4. Inspect `futures-rs` at `0.3.34` (CI, tests, Miri, advisories, rustdoc) and run upstream coverage for the agreed scope.
+4. Review upstream CI run results, test sources, issues and the `Stream` rustdoc at `0.3.34` (CI definition and `AtomicWaker` rustdoc already read, see 11.5), and run upstream coverage for the agreed scope.
 5. Count unsafe lines with and without safety notes for the agreed scope.
 
 Subsequent qualification activities (subject to the applicable CLAS_OUT process and Safety team review):
