@@ -392,13 +392,13 @@ On approval, update the **Proposed decision** in section 5 to **Decision** and r
 | Rule | Source |
 |---|---|
 | Record the qualification target first: crate name/version, repository and revision, enabled features, target platforms, dependency baseline | [`rust_crate_safety_guideline.rst`](https://github.com/eclipse-score/score-crates/blob/main/docs/rust_crate_safety_guideline.rst), Step 1 |
-| Three tables: P (HE/PE/NE), C (NH/HM/NM), CLAS_OUT (Q/QR/NQ); the outcome is an initial proposal, final after Safety team review | `rust_crate_safety_guideline.rst`, Steps 1 and 2 |
-| External dependencies of the crate must also go through the process or be replaced | `rust_crate_safety_guideline.rst`, Step 1 ("External dependencies") |
-| Q/QR then address findings (coverage, docs, requirements, design, traceability); NQ cannot be used in the safety-critical codebase | `rust_crate_safety_guideline.rst`, Steps 2-4 |
-| P=1: no measure indicates PE/NE; P=2: some PE/NE but gaps acceptable (low or manageable risk); P=3 otherwise | S-CORE safety qualification guidelines, Step 1 |
-| C=1: no HM/NM; C=2: some HM/NM but acceptable; C=3 otherwise | S-CORE safety qualification guidelines, Step 2 |
-| Matrix: C=1 gives Q, Q, QR for P=1, 2, 3; C=2 gives QR for all P; C=3 gives QR, QR, NQ | S-CORE safety qualification guidelines, Step 3 |
-| Activities: Q follows the qualification process; QR follows the pre-existing architectural element process; NQ not for safety context | S-CORE safety qualification guidelines, Step 5 |
+| Three tables: P (HE/PE/NE), C (NH/HM/NM), CLAS_OUT (Q/QR/NQ); the outcome is an initial proposal, final after Safety team review | S-CORE safety qualification guidelines (`score-crates: docs/rust_crate_safety_guideline.rst`), Steps 1 and 2 |
+| External dependencies of the crate must also go through the process or be replaced | S-CORE safety qualification guidelines (`score-crates: docs/rust_crate_safety_guideline.rst`), Step 1 ("External dependencies") |
+| Q/QR then address findings (coverage, docs, requirements, design, traceability); NQ cannot be used in the safety-critical codebase | S-CORE safety qualification guidelines (`score-crates: docs/rust_crate_safety_guideline.rst`), Steps 2-4 |
+| P=1: no measure indicates PE/NE; P=2: some PE/NE but gaps acceptable (low or manageable risk); P=3 otherwise | S-CORE safety qualification guidelines (`score-crates: docs/rust_crate_safety_guideline.rst`), Step 1 |
+| C=1: no HM/NM; C=2: some HM/NM but acceptable; C=3 otherwise | S-CORE safety qualification guidelines (`score-crates: docs/rust_crate_safety_guideline.rst`), Step 2 |
+| Matrix: C=1 gives Q, Q, QR for P=1, 2, 3; C=2 gives QR for all P; C=3 gives QR, QR, NQ | S-CORE safety qualification guidelines (`score-crates: docs/rust_crate_safety_guideline.rst`), Step 3 |
+| Activities: Q follows the qualification process; QR follows the pre-existing architectural element process; NQ not for safety context | S-CORE safety qualification guidelines (`score-crates: docs/rust_crate_safety_guideline.rst`), Step 5 |
 
 No threshold for "high" LoC is defined. Whether the process classifies a whole crate, a sub-crate or a used subset is not stated explicitly; refer to the applicable S-CORE safety guidelines which speak of "the crate" with its enabled features and dependency baseline (see 11.6).
 
