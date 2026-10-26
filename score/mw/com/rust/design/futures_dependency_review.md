@@ -217,7 +217,7 @@ The presence of an artifact does not establish its completeness or acceptance fo
 ### 6.3 Unit test reports
 
 **Available**
-- Rust unit tests: `consumer.rs` (4 tests, lines 1225–1372), `producer.rs` (2), mock `runtime.rs` (3, one using `block_on`), `concept.rs`, `interface_macros.rs`, `sample_ptr.rs`, `sample_allocatee_ptr.rs`.
+- Rust unit tests: `consumer.rs` (4 tests, lines 1224–1372), `producer.rs` (2), mock `runtime.rs` (3, one using `block_on`), `concept.rs`, `interface_macros.rs`, `sample_ptr.rs`, `sample_allocatee_ptr.rs`.
 - `rust_test` target for the LoLa runtime; `quality/unit_testing/unit_testing.bzl` also provides QNX variants (`rust_test_qnx`).
 - Integration binary `test/basic_rust_api/consumer_async_apis` and examples using `block_on` and tokio.
 
@@ -335,10 +335,10 @@ The presence of an artifact does not establish its completeness or acceptance fo
 |----------|-------------|------------|
 | A. Retain upstream, qualified use | Fill the gaps in section 6, document the contracts COM relies on, verify them by tests and analysis. | Feasible; proportionate; preferred |
 | B. A plus deeper dependency review | Additionally review upstream `unsafe` paths for `AtomicWaker` and `Stream`, if stakeholders require it. | Feasible; scope depends on required assurance level |
-| C. Narrower dependency | Use `futures-core` and the `AtomicWaker` provider instead of the facade; `std::task` for `Context`/`Poll`. | Feasibility not confirmed (needs a `score_crates` change and use of a `doc(hidden)` path); would reduce the review surface; can combine with A |
+| C. Narrower dependency | Use `futures-core` and the `AtomicWaker` provider instead of the facade; `std::task` for `Context`/`Poll`. | Feasibility not confirmed (needs a `score_crates` configuration/build check); `futures-util::task::AtomicWaker` is public, while the `futures-core`-only variant needs a `doc(hidden)` path; could reduce the review surface; can combine with A |
 | D. S-CORE-maintained fork or in-house waker/stream | Own the implementation. | Not justified now; revisit only for a concrete reason |
 
-Reasons that would justify reconsidering D: upstream unmaintained, an unpatched critical defect, or stakeholder confirmation that upstream evidence is mandatory and unobtai-nable.
+Reasons that would justify reconsidering D: upstream unmaintained, an unpatched critical defect, or stakeholder confirmation that upstream evidence is mandatory and unobtainable.
 
 ### Answer to the core question
 
@@ -419,7 +419,7 @@ No threshold for "high" LoC is defined. Whether the process classifies a whole c
 |---|---|---|
 | Crate / version | `futures` 0.3.34 | `MODULE.bazel.lock` |
 | Archive | `static.crates.io/crates/futures/0.3.34/download` | SHA-256 `9a31d2a3...e5d0a3` matches the lock (`sha256sum`, 2026-10-22) |
-| Upstream revision | Not determined | **Open:** tag `v0.3.34` commit not inspected |
+| Upstream revision | Tag `0.3.34` → commit `705e6b5c0f06535b1aac1cb1989a172b3d45be8c` | GitHub release page; **Open:** source at this commit not inspected, not compared with the crates.io archive |
 | Enabled features | `alloc`, `async-await`, `default`, `executor`, `futures-executor`, `std` | `MODULE.bazel.lock`; **Open:** feature sets of the other sub-crates |
 | Target platforms | Linux and QNX builds exist in this repository | **Open:** confirm with architecture |
 | Dependency baseline | `score_crates` 0.0.13 | `MODULE.bazel` (line 47) |
@@ -463,7 +463,7 @@ This subtotal covers the eight listed crate archives only. It is not a verified 
 
 **Lockfile-derived dependency inventory.** `MODULE.bazel.lock` identifies the eight listed `futures` workspace crates and the additional dependencies `futures-macro`, `memchr` 2.8.3, `slab` 0.4.12 and `pin-project-lite` 0.2.17; it lists `futures-util` features `async-await-macro`, `channel`, `io`, `sink`, `slab`, `memchr` and `std`. This inventory has **not** been verified against the Bazel-resolved dependency graph (`bazel query` failed offline because the `score_crates` 0.0.13 archive could not be downloaded), so the complete compiled dependency closure is not yet known. The additional dependencies are not yet included in the line-count or unsafe-code measurements.
 
-Not measured: the compiled closure under Bazel (which `futures-util` features and third-party dependencies such as `slab`, `memchr`, `pin-project-lite`, `futures-macro` are built), coverage, Miri, Clippy. The published archives contain no test files, so upstream tests and CI must be taken from the upstream repository at tag `v0.3.34` (not inspected).
+Not measured: the compiled closure under Bazel (which `futures-util` features and third-party dependencies such as `slab`, `memchr`, `pin-project-lite`, `futures-macro` are built), coverage, Miri, Clippy. The published archives contain no test files, so upstream tests and CI must be taken from the upstream repository at tag `0.3.34` (not inspected).
 
 Reproduce the closure with `bazel query 'deps(@score_communication_crate_index//:futures)'` and review the resolved features in `MODULE.bazel.lock`.
 
@@ -475,7 +475,7 @@ No upstream repository evidence (CI, issues, rustdoc content) was inspected, so 
 
 | Id | Indicator | Evidence found | Missing | Rating | Notes (hypothesis, not a rating) | Follow-up |
 |---|---|---|---|---|---|---|
-| 1 | Rules and state-of-the-art processes for design, implementation, verification | None collected | Upstream CI: tests, Clippy, Miri, coverage job, changelog, advisories | Not rated — evidence pending | Gaps may exist | Inspect `futures-rs` CI at `v0.3.34` |
+| 1 | Rules and state-of-the-art processes for design, implementation, verification | None collected | Upstream CI: tests, Clippy, Miri, coverage job, changelog, advisories | Not rated — evidence pending | Gaps may exist | Inspect `futures-rs` CI at `0.3.34` |
 | 2 | Requirements available | None in S-CORE form | Requirements for `Stream` and `AtomicWaker` behaviour; rustdoc not reviewed | Not rated — evidence pending | Requirements may exist only in rustdoc, or not at all | Review rustdoc; write TRLC requirements |
 | 3 | Specification (architecture) | Source comments describe the trait and waker contract | Specification document | Not rated — evidence pending | Specification may be partial | Review rustdoc and `AtomicWaker` docs |
 | 4 | Design specification | None found | Static design for the used parts | Not rated — evidence pending | Design documents may be absent | Create design in `score-crates` |
@@ -513,7 +513,7 @@ Required before classification:
 1. `score-crates`, `docs/futures/docs/component_classification.rst`: write the report from 11.1, 11.4 and 11.5.
 2. Maintainers and Safety team: agree the scope (full closure or narrowed) and whether the `__internal` path is acceptable.
 3. Re-run the `bazel query` in 11.4 with network access and compare it with the lockfile-derived dependency inventory.
-4. Inspect `futures-rs` at `v0.3.34` (CI, tests, Miri, advisories, rustdoc) and run upstream coverage for the agreed scope.
+4. Inspect `futures-rs` at `0.3.34` (CI, tests, Miri, advisories, rustdoc) and run upstream coverage for the agreed scope.
 5. Count unsafe lines with and without safety notes for the agreed scope.
 
 Subsequent qualification activities (subject to the applicable CLAS_OUT process and Safety team review):
