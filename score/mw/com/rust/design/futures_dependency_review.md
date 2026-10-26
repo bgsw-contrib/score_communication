@@ -110,7 +110,7 @@ No `futures::executor` usage was found in production code. The COM API does not 
 |-------|--------------------|--------|
 | Provenance | Pinned by version and SHA-256 in `MODULE.bazel.lock`. Fetched from `static.crates.io`. On 2026-10-26 the SHA-256 of the downloaded archives of `futures`, the seven `futures-*` crates listed in 11.4, `futures-macro`, `memchr`, `slab` and `pin-project-lite` was found in `MODULE.bazel.lock`. | Partly verified (archive hash equals lock entry; this does not verify against upstream source); **Open:** comparison with upstream tag `0.3.34`, and verification of `proc-macro2`, `quote`, `syn`, `unicode-ident` |
 | Licensing | `license = "MIT OR Apache-2.0"` in the `Cargo.toml` of the pinned `futures-core` and `futures-util` archives; the `futures-core` archive ships `LICENSE-APACHE` and `LICENSE-MIT`. On 2026-10-26 the `Cargo.toml` license field and license files were also seen in the downloaded archives of the other `futures-*` crates, `futures-macro` (all `MIT OR Apache-2.0`, with `LICENSE-APACHE` and `LICENSE-MIT`), `memchr` (`Unlicense OR MIT`, `LICENSE-MIT`, `UNLICENSE`), `pin-project-lite` (`Apache-2.0 OR MIT`, both files) and `slab` (`MIT`, `LICENSE`). License texts are not committed to this repository, and `proc-macro2`, `quote`, `syn`, `unicode-ident` were not checked. | Declared licenses and license files seen in archives; **Open:** check the four remaining closure crates, collect license texts, and confirm the license review approach with the Safety team |
-| Maintenance | Upstream is `rust-lang/futures-rs`. No dated review is stored. | **Open:** dated release/activity/advisory review (also confirm that `0.3.34` is the intended release) |
+| Maintenance | Upstream is `rust-lang/futures-rs`. On 2026-10-26: crates.io and GitHub list `0.3.34` as the latest release (published 2026-08-11). The RustSec advisory-db contains `RUSTSEC-2020-0059` to `-0062` for `futures` crates; for `futures-util` two were read (patched in `>= 0.3.7` and `>= 0.3.2`, both older than `0.3.34`); the others and the per-crate listings were not fully checked (unauthenticated GitHub API, possible rate limits). Repository activity and maintainers were not reviewed. | **Open:** complete dated activity/advisory review |
 | Safety relevance | `Stream`, `AtomicWaker`, `Context`, `Poll` are on the production receive and discovery paths. | **Open:** focused analysis (see section 6) |
 | API stability | `futures::Stream` is part of the public API; upgrades must stay source-compatible. | Document compatibility rule |
 | Build reproducibility | Built through Bazel/`rules_rust` with the Ferrocene toolchain. | **Open:** record an offline/clean-room rebuild |
@@ -210,7 +210,7 @@ The presence of an artifact does not establish its completeness or acceptance fo
 
 **Gaps**
 - The 4 consumer unit tests cover info, subscribe, `try_receive` and type-ops error. None exercises `ReceiveFuture::poll`, `SampleStream::poll_next`, `ServiceDiscoveryFuture` or the wake-up path.
-- `consumer_async_apis` is a `rust_binary`; whether it runs as a test target and produces a result report is **Open**.
+- `consumer_async_apis` builds the `rust_binary` `bigdata-consumer-async`, which is packaged in the same `BUILD` and driven by `integration_test/com_api_async_api_test.py`. Whether that integration test runs in CI and produces a result report was not checked and is **Open**.
 - No requirement-to-test annotations for Rust async behaviour.
 
 **Effort:** Medium (targeted tests for waker registration/wake, stream termination, error item, cancellation, discovery drop before callback). **Status:** gap confirmed.
@@ -354,8 +354,10 @@ Conditions:
 ## 9. Next Steps
 
 1. **Maintainer decision:** confirm the retain decision and whether footprint reduction becomes a separate issue (code owners in `.github/CODEOWNERS`).
-2. **Evidence collection:** verify archive and license; record a dated upstream review; capture current Rust coverage, Clippy and sanitizer results; confirm that `consumer_async_apis` runs in CI.
-3. **Safety stakeholders:** ask which standards, evidence and acceptance criteria apply, and whether upstream evidence for `futures` is expected.
+2. **Evidence collection (author):** verify archive and license; record a dated upstream review; capture current Rust coverage, Clippy and sanitizer results; confirm that `consumer_async_apis` runs in CI.
+   - Done: archive hashes and declared licenses for twelve crates, upstream tag commit, latest release, partial advisory check (sections 3, 11.1).
+   - Required from maintainers: agree the scope (full closure or narrowed, 11.7 action 2) and confirm whether `consumer_async_apis` runs in CI.
+3. **Safety stakeholders:** require a decision from the Safety team on which standards, evidence and acceptance criteria apply, and whether upstream evidence for `futures` is expected.
 4. **Follow-up issues** (only for gaps accepted above): Rust async requirements; async unit tests; FMEA extension; design update; dependency governance in CI; footprint reduction.
 5. **Share this record** with architecture and safety reviewers (acceptance criterion of #1263) and update the **Open** items once evidence is attached.
 
@@ -406,7 +408,7 @@ No threshold for "high" LoC is defined. Whether the process classifies a whole c
 |---|---|---|
 | Crate / version | `futures` 0.3.34 | `MODULE.bazel.lock` |
 | Archive | `static.crates.io/crates/futures/0.3.34/download` | SHA-256 `9a31d2a3...e5d0a3` matches the lock (`sha256sum`, 2026-10-22) |
-| Upstream revision | Tag `0.3.34` → commit `705e6b5c0f06535b1aac1cb1989a172b3d45be8c` | GitHub release page; **Open:** source at this commit not inspected, not compared with the crates.io archive |
+| Upstream revision | Tag `0.3.34` → commit `705e6b5c0f06535b1aac1cb1989a172b3d45be8c` | GitHub tag API (2026-10-26) returns this commit; the `futures` archive's `.cargo_vcs_info.json` records the same `sha1`. **Open:** source files at this commit not compared with the crates.io archive |
 | Enabled features | `alloc`, `async-await`, `default`, `executor`, `futures-executor`, `std` | `MODULE.bazel.lock`; **Open:** feature sets of the other sub-crates |
 | Target platforms | Linux and QNX builds exist in this repository | **Open:** confirm with architecture |
 | Dependency baseline | `score_crates` 0.0.13 | `MODULE.bazel` (line 47) |
