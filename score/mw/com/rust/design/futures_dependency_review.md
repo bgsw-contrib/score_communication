@@ -77,34 +77,11 @@ Targets that declare `@score_communication_crate_index//:futures`:
 | `score/mw/com/test/basic_rust_api/consumer_async_apis/BUILD` | 39         |
 
 ## 2. Direct Call Sites
-## 2. Direct Call Sites
 
 ### Production runtime and public API
 
 | File | Lines | Items used |
 |------|-------|------------|
-| `score/mw/com/rust/score_com_concept/concept.rs` | 57, 931 | `futures::stream::Stream` — return type of `Subscription::to_stream()` |
-| `score/mw/com/impl/rust/com-api/com-api-runtime-lola/consumer.rs` | 40–41 | imports `stream::Stream`, `task::{AtomicWaker, Context, Poll}` |
-| same | 487, 699 | `Arc<AtomicWaker>` in the subscriber and `ReceiveFuture` |
-| same | 676 | `to_stream()` implementation (`SampleStream: Stream`) |
-| same | 925, 993 | `AtomicWaker::new()` / field in the service-discovery future |
-
-`AtomicWaker` usage pattern in the production code:
-
-- `ReceiveFuture::poll`, `SampleStream::poll_next` and `ServiceDiscoveryFuture::poll` call `register(cx.waker())` **before** attempting to receive or reading shared state. The code comments state this is to avoid a missed wake-up against the FFI callback.
-- The C++ discovery callback calls `wake()` after storing handles under a `Mutex`.
-
-No `futures::executor` usage was found in production code. The COM API does not impose an executor on applications.
-
-### Mock, examples, tests
-
-| File | Lines | Items used |
-|------|-------|------------|
-| `score/mw/com/impl/rust/com-api/com-api-runtime-mock/runtime.rs` | 34, 338, 529 | `stream::{self, Stream}`, `stream::empty()`, `executor::block_on` (in a unit test) |
-| `score/mw/com/example/com-api-example/main.rs` | 106–143 | `executor::block_on` |
-| `score/mw/com/example/com-api-example/src/consumer.rs` | 15–16 | `channel::oneshot`, `FutureExt`, `StreamExt` |
-| `score/mw/com/example/com-api-example/tests_using_tokio_runtime.rs` | 41 | `stream::StreamExt` (tokio runtime) |
-| `score/mw/com/test/basic_rust_api/consumer_async_apis/consumer_app.rs` | 31–32, 182 | `channel::oneshot`, `FutureExt`, `StreamExt`, `executor::block_on` |
 | `score/mw/com/rust/score_com_concept/concept.rs` | 57, 931 | `futures::stream::Stream` — return type of `Subscription::to_stream()` |
 | `score/mw/com/impl/rust/com-api/com-api-runtime-lola/consumer.rs` | 40–41 | imports `stream::Stream`, `task::{AtomicWaker, Context, Poll}` |
 | same | 487, 699 | `Arc<AtomicWaker>` in the subscriber and `ReceiveFuture` |
@@ -509,10 +486,10 @@ P cannot be set yet. P=2 requires the Safety team to accept the identified gaps 
 
 **C (complexity)**
 
-| Id | Indicator | Full facade closure | `futures-core` only | Rating |
+| Id | Indicator | Measured eight-crate subtotal (partial, not full closure; see 11.4) | `futures-core` only | Rating |
 |---|---|---|---|---|
 | 1 | Lines of code | 19544 (11.4) | 306 | Not rated — evidence pending (threshold to be defined) |
-| 2 | Unsafe code | about 245 source lines containing `unsafe` (preliminary upper bound) | 5 source lines containing `unsafe` (four in `AtomicWaker`, one unsafe block involving `map_unchecked_mut`; see 11.4) | Not rated — evidence pending (full unsafe analysis required) |
+| 2 | Unsafe code | about 245 source lines containing `unsafe` (eight-crate subtotal; preliminary upper bound) | 5 source lines containing `unsafe` (four in `AtomicWaker`, one unsafe block involving `map_unchecked_mut`; see 11.4) | Not rated — evidence pending (full unsafe analysis required) |
 | 3 | Tests and coverage | Not measured | Not measured | Not rated — evidence pending |
 | 4 | Public interfaces | Not counted | Not counted | Not rated — evidence pending |
 | 5 | Parameters | Not counted | Not counted | Not rated — evidence pending |
