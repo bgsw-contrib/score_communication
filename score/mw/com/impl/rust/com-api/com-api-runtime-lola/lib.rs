@@ -1,15 +1,15 @@
-/********************************************************************************
- * Copyright (c) 2025 Contributors to the Eclipse Foundation
+/*******************************************************************************
+ * Copyright (c) 2026 Contributors to the Eclipse Foundation
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information regarding copyright ownership.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0
+ * <https://www.apache.org/licenses/LICENSE-2.0>
  *
  * SPDX-License-Identifier: Apache-2.0
- ********************************************************************************/
+ *******************************************************************************/
 
 //! This crates implements the COM API runtime for Lola
 //! It provides the necessary structures and implementations to interact with the Lola communication middleware
@@ -26,11 +26,22 @@
 //! that utilize the COM API abstractions.
 
 mod consumer;
+// Note: The `method` module is currently a placeholder and
+// will be implemented in the future for the Lola runtime.
+// https://github.com/eclipse-score/communication/issues/782
+mod field_consumer;
+mod field_producer;
+mod method;
 mod producer;
 mod runtime;
 
 pub use consumer::{LolaConsumerDiscovery, LolaConsumerInfo, LolaSample, LolaSubscribableImpl};
+pub use field_consumer::LolaFieldSubscriber;
+pub use field_producer::LolaFieldPublisher;
 pub use producer::{LolaProducerBuilder, LolaProviderInfo, LolaPublisher, LolaSampleMaybeUninit, LolaSampleMut};
 pub use runtime::{LolaRuntimeImpl, RuntimeBuilderImpl};
 
-use core::fmt::Debug;
+pub use method::{
+    LolaFieldGetCaller, LolaFieldSetCaller, LolaMethodCaller, LolaMethodHandler, LolaMethodInArgAllocator,
+    LolaMethodInArgMaybeUninit, LolaMethodReturnSample,
+};

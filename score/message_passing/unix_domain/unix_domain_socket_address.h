@@ -40,13 +40,14 @@ class UnixDomainSocketAddress
     {
         return reinterpret_cast<const sockaddr*>(&addr_);
     }
+    const sockaddr* data() const&& noexcept = delete;
     static constexpr std::size_t size() noexcept
     {
         return sizeof(addr_);
     }
 
   private:
-    struct sockaddr_un addr_;
+    struct sockaddr_un addr_{};
 };
 
 inline UnixDomainSocketAddress::UnixDomainSocketAddress(const std::string_view path, const bool isAbstract) noexcept

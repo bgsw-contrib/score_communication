@@ -1,15 +1,15 @@
-/********************************************************************************
- * Copyright (c) 2025 Contributors to the Eclipse Foundation
+/*******************************************************************************
+ * Copyright (c) 2026 Contributors to the Eclipse Foundation
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information regarding copyright ownership.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0
+ * <https://www.apache.org/licenses/LICENSE-2.0>
  *
  * SPDX-License-Identifier: Apache-2.0
- ********************************************************************************/
+ *******************************************************************************/
 
 //! This file implements the producer side of the COM API for LoLa runtime.
 //! It defines the `Publisher` struct and its associated methods for allocating and sending samples.
@@ -29,7 +29,7 @@
 //TODO: revist this once com-api is stable - Ticket-234827
 #![allow(clippy::needless_lifetimes)]
 
-use crate::Debug;
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::mem::ManuallyDrop;
 use core::ops::{Deref, DerefMut};
@@ -39,8 +39,8 @@ use std::sync::Arc;
 use score_log as log;
 
 use score_com_concept::{
-    AllocationFailureReason, Builder, CommData, Error, EventFailedReason, InstanceSpecifier, Interface, Producer,
-    ProducerBuilder, ProducerFailedReason, ProviderInfo, Publisher, Result, SampleMaybeUninit, SampleMut,
+    AllocationFailureReason, Builder, CommData, Error, EventFailedReason, EventSampleMut, InstanceSpecifier, Interface,
+    Producer, ProducerBuilder, ProducerFailedReason, ProviderInfo, Publisher, Result, SampleMaybeUninit, SampleMut,
     ServiceFailedReason,
 };
 
@@ -203,7 +203,9 @@ where
     }
 }
 
-impl<'a, T, B: FFIBridge> SampleMut<T> for LolaSampleMut<'a, T, B>
+impl<'a, T, B: FFIBridge> SampleMut<T> for LolaSampleMut<'a, T, B> where T: CommData + Debug {}
+
+impl<'a, T, B: FFIBridge> EventSampleMut<T> for LolaSampleMut<'a, T, B>
 where
     T: CommData + Debug,
 {

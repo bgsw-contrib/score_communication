@@ -1,3 +1,16 @@
+<!-- ----------------------------------------------------------------------------
+  Copyright (c) 2026 Contributors to the Eclipse Foundation
+
+  See the NOTICE file(s) distributed with this work for additional
+  information regarding copyright ownership.
+
+  This program and the accompanying materials are made available under the
+  terms of the Apache License Version 2.0 which is available at
+  https://www.apache.org/licenses/LICENSE-2.0
+
+  SPDX-License-Identifier: Apache-2.0
+----------------------------------------------------------------------------- -->
+
 # Software Design Description of `mw::com`
 
 This and the following documents shall act as software architecture for `mw::com`, an IPC library.
@@ -130,6 +143,12 @@ Our implementation of `mw::com` depends on the following components/libraries:
 * `//platform/aas/lib/os:unistd`
 * `//platform/aas/lib/result`
 * amp (broken_link_g/swh/amp)
+
+## Topic-Specific Design Documentation
+
+The following design documents cover feature-specific aspects of `mw::com`:
+
+* [E2E Error Handling — Requirements & Public API](./e2e_protection/E2E_ERROR_HANDLING_PUBLIC_API.md) — Finalized proposal for E2E error-handling public API, covering requirements, design rationale, configuration, and usage examples.
 
 ## Pictures and Diagrams
 

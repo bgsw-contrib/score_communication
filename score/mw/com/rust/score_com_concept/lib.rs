@@ -1,15 +1,15 @@
-/********************************************************************************
- * Copyright (c) 2025 Contributors to the Eclipse Foundation
+/*******************************************************************************
+ * Copyright (c) 2026 Contributors to the Eclipse Foundation
  *
  * See the NOTICE file(s) distributed with this work for additional
  * information regarding copyright ownership.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0
+ * <https://www.apache.org/licenses/LICENSE-2.0>
  *
  * SPDX-License-Identifier: Apache-2.0
- ********************************************************************************/
+ *******************************************************************************/
 
 /// This is main library file for the score_com_concept crate, which defines the core traits, types,
 /// and macros for the communication API score_com_concept.
@@ -22,10 +22,20 @@
 /// boundaries without violating Rust's ownership rules.
 mod concept;
 mod error;
+mod field_concept;
+mod interface_consumer_macros;
 mod interface_macros;
+mod interface_producer_macros;
+mod method_arities_macros;
+mod method_concept;
 mod reloc;
 pub use concept::*;
 pub use error::*;
+pub use field_concept::*;
+pub use interface_macros::{HandlerNotSet, HandlerSet, Init, Uninit, WithGetter, WithNotifier, WithSetter};
+pub use method_concept::*;
 #[doc(hidden)]
 pub use pastey;
 pub use reloc::Reloc;
+#[doc(hidden)]
+pub use score_com_macros;
